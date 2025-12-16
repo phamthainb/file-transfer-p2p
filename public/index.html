@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P2P File Transfer - Chia sẻ file trực tiếp</title>
+  <meta name="description" content="Chia sẻ file trực tiếp peer-to-peer qua WebRTC. Nhanh chóng, an toàn, không qua server.">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Socket.io Client -->
+  <script src="/socket.io/socket.io.js"></script>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'sans': ['Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#fef2f2',
+              100: '#fee2e2',
+              200: '#fecaca',
+              300: '#fca5a5',
+              400: '#f87171',
+              500: '#ef4444',
+              600: '#dc2626',
+              700: '#b91c1c',
+              800: '#991b1b',
+              900: '#7f1d1d',
+            },
+            gray: {
+              50: '#fafafa',
+              100: '#f4f4f5',
+              200: '#e4e4e7',
+              300: '#d4d4d8',
+              400: '#a1a1aa',
+              500: '#71717a',
+              600: '#52525b',
+              700: '#3f3f46',
+              800: '#27272a',
+              900: '#18181b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen font-sans">
+  <!-- Background Effects -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-40 -right-40 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute top-1/2 -left-40 w-96 h-96 bg-rose-400/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+    <div class="absolute -bottom-40 right-1/3 w-80 h-80 bg-orange-400/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+  </div>
+  
+  <div class="relative z-10 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="border-b border-gray-200 backdrop-blur-xl bg-white/80 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-rose-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-xl font-bold bg-gradient-to-r from-primary-600 to-rose-600 bg-clip-text text-transparent">P2P Transfer</h1>
+              <p class="text-xs text-gray-500">Chia sẻ file trực tiếp</p>
+            </div>
+          </div>
+          
+          <!-- Your ID Badge -->
+          <div id="my-id-badge" class="hidden">
+            <div class="flex items-center gap-3 flex-wrap">
+              <!-- Device Badge -->
+              <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
+                <span id="my-device-icon" class="text-base">💻</span>
+                <span id="my-device" class="text-sm text-gray-600">...</span>
+              </div>
+              
+              <!-- IP Badge -->
+              <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                </svg>
+                <span id="my-ip" class="text-sm font-mono text-gray-600">...</span>
+              </div>
+              
+              <!-- ID Badge -->
+              <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-sm text-gray-600">Mã:</span>
+                <span id="my-peer-id" class="font-mono font-bold text-primary-600 tracking-wider">---</span>
+                <button id="copy-id-btn" class="p-1 hover:bg-gray-100 rounded transition-colors" title="Sao chép">
+                  <svg class="w-4 h-4 text-gray-400 hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </header>
+    
+    <!-- User Profile Bar -->
+    <div id="user-profile-bar" class="hidden border-b border-gray-200 bg-white/50 backdrop-blur-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+        <div class="flex items-center justify-center gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-rose-500 flex items-center justify-center text-white font-bold text-sm">
+              <span id="user-avatar-text">?</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input 
+                type="text" 
+                id="user-name-input" 
+                class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 w-48"
+                placeholder="Nhập tên của bạn..."
+                maxlength="30"
+              >
+              <button 
+                id="save-name-btn"
+                class="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Lưu
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8">
+      <!-- Connection Status -->
+      <div id="connection-status" class="mb-8">
+        <div class="flex items-center justify-center gap-3 py-4">
+          <div class="connecting-spinner"></div>
+          <span class="text-gray-600">Đang kết nối với server...</span>
+        </div>
+      </div>
+      
+      <!-- Main Interface (hidden until connected) -->
+      <div id="main-interface" class="hidden">
+        <div class="grid lg:grid-cols-3 gap-6">
+          
+          <!-- Left Column: Peers List -->
+          <div class="lg:col-span-1">
+            <div class="card">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold flex items-center gap-2 text-gray-800">
+                  <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                  </svg>
+                  Trực tuyến
+                </h2>
+                <span id="peer-count" class="px-2 py-1 text-xs font-medium bg-primary-100 text-primary-600 rounded-full">0</span>
+              </div>
+              
+              <!-- Connect by ID -->
+              <div class="mb-4">
+                <div class="flex gap-2">
+                  <input 
+                    type="text" 
+                    id="target-peer-id" 
+                    placeholder="Nhập mã peer..."
+                    class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 placeholder-gray-400 font-mono uppercase tracking-wider"
+                    maxlength="6"
+                  >
+                  <button 
+                    id="connect-btn"
+                    class="px-4 py-2.5 bg-gradient-to-r from-primary-500 to-rose-500 hover:from-primary-600 hover:to-rose-600 text-white rounded-xl text-sm font-medium transition-all hover:shadow-lg hover:shadow-primary-500/25 active:scale-95"
+                  >
+                    Kết nối
+                  </button>
+                </div>
+              </div>
+              
+              <div class="border-t border-gray-200 pt-4">
+                <div id="peers-list" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
+                  <div class="text-center py-8 text-gray-400 text-sm">
+                    Chưa có peer nào trực tuyến
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Column: File Transfer -->
+          <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Connection Panel -->
+            <div id="connection-panel" class="card hidden">
+              <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-800">Đã kết nối P2P</h3>
+                  <p class="text-sm text-gray-500">Kết nối với <span id="connected-peer-id" class="text-primary-600 font-mono">---</span></p>
+                </div>
+                <button 
+                  id="disconnect-btn"
+                  class="ml-auto px-4 py-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Ngắt kết nối
+                </button>
+              </div>
+              
+              <!-- P2P Animation -->
+              <div class="p2p-animation-container mb-4">
+                <div class="p2p-peer p2p-peer-left">
+                  <div class="p2p-avatar">Bạn</div>
+                </div>
+                <div class="p2p-line">
+                  <div class="p2p-data-packet"></div>
+                </div>
+                <div class="p2p-peer p2p-peer-right">
+                  <div class="p2p-avatar" id="remote-peer-avatar">?</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- My Shared Files (files I'm sharing) -->
+            <div id="my-shared-files" class="card hidden">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold flex items-center gap-2 text-gray-800">
+                  <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                  </svg>
+                  File bạn đang chia sẻ
+                </h3>
+                <span id="my-shared-count" class="px-2 py-1 text-xs font-medium bg-primary-100 text-primary-600 rounded-full">0</span>
+              </div>
+              <div id="my-shared-list" class="space-y-2">
+                <!-- My shared files will be listed here -->
+              </div>
+            </div>
+
+            <!-- Available Files from Peer (files peer is sharing) -->
+            <div id="peer-shared-files" class="card hidden">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold flex items-center gap-2 text-gray-800">
+                  <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                  File có sẵn từ <span id="peer-name-files" class="text-primary-600">Peer</span>
+                </h3>
+                <button id="download-selected-btn" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors hidden">
+                  Tải về đã chọn
+                </button>
+              </div>
+              <div id="peer-shared-list" class="space-y-2">
+                <p class="text-gray-400 text-sm text-center py-4">Chưa có file nào được chia sẻ</p>
+              </div>
+            </div>
+
+            <!-- Transfer Progress -->
+            <div id="transfer-section" class="card hidden">
+              <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-800">
+                <svg class="w-5 h-5 text-primary-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Đang truyền file
+              </h3>
+              <div id="transfer-list" class="space-y-3">
+                <!-- Transfer items will be added here -->
+              </div>
+            </div>
+
+            <!-- Received Files (downloaded files) -->
+            <div id="received-files" class="card hidden">
+              <h3 class="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-800">
+                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                File đã nhận
+              </h3>
+              <div id="received-list" class="space-y-2">
+                <!-- Received files will be listed here -->
+              </div>
+            </div>
+            
+            <!-- File Drop Zone -->
+            <div id="drop-zone" class="card hidden">
+              <div 
+                id="file-drop-area"
+                class="border-2 border-dashed border-gray-300 hover:border-primary-400 rounded-2xl p-8 text-center transition-all cursor-pointer group"
+              >
+                <input type="file" id="file-input" class="hidden" multiple>
+                <div class="space-y-3">
+                  <div class="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-primary-100 to-rose-100 flex items-center justify-center group-hover:from-primary-200 group-hover:to-rose-200 transition-all">
+                    <svg class="w-8 h-8 text-primary-500 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-base font-medium text-gray-800">Thêm file để chia sẻ</p>
+                    <p class="text-sm text-gray-500">Kéo thả hoặc nhấp để chọn</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="card">
+              <div class="text-center py-12">
+                <div class="w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <h3 class="text-xl font-semibold mb-2 text-gray-800">Bắt đầu chia sẻ file</h3>
+                <p class="text-gray-500 max-w-md mx-auto">
+                  Kết nối với một peer bằng cách nhập mã của họ hoặc chọn từ danh sách bên trái, sau đó kéo thả file để gửi.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 py-4 bg-white/50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <p class="text-center text-sm text-gray-500">
+          Được xây dựng với WebRTC • Truyền file trực tiếp, không qua server
+        </p>
+      </div>
+    </footer>
+  </div>
+  
+  <!-- File Request Modal -->
+  <div id="file-request-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="modal-content bg-white border border-gray-200 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+      <div class="p-6">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-100 to-rose-100 flex items-center justify-center">
+          <svg class="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-center mb-2 text-gray-800">Yêu cầu nhận file</h3>
+        <p class="text-gray-500 text-center mb-4">
+          <span id="request-peer-id" class="text-primary-600 font-mono">---</span> muốn gửi file cho bạn
+        </p>
+        <div class="bg-gray-50 rounded-xl p-4 mb-6">
+          <div class="flex items-center gap-3">
+            <div id="file-icon" class="w-12 h-12 rounded-lg bg-gradient-to-br from-primary-500 to-rose-500 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p id="request-file-name" class="font-medium truncate text-gray-800">filename.ext</p>
+              <p id="request-file-size" class="text-sm text-gray-500">0 KB</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button 
+            id="reject-file-btn"
+            class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+          >
+            Từ chối
+          </button>
+          <button 
+            id="accept-file-btn"
+            class="flex-1 px-4 py-3 bg-gradient-to-r from-primary-500 to-rose-500 hover:from-primary-600 hover:to-rose-600 text-white rounded-xl font-medium transition-all hover:shadow-lg hover:shadow-primary-500/25"
+          >
+            Chấp nhận
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+  
+  <!-- Scripts -->
+  <script src="webrtc.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

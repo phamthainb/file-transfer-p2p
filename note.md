@@ -4,8 +4,8 @@
 Ứng dụng web cho phép người dùng chia sẻ file trực tiếp peer-to-peer (P2P) qua giao thức WebRTC. Tự triển khai từ đầu để hiểu rõ cơ chế Signaling, STUN/ICE và Data Channel.
 
 ## 2. Technology Stack
-- **Frontend:** HTML + CSS + JavaScript (thuần)
-- **Server:** Node.js + Express + Socket.io -> Signaling Server, Static file server
+- **Frontend:** HTML + CSS + JavaScript (thuần), Tailwind CSS, Animation (thể hiện hiệu ứng chuyển động, gửi file, nhận file,...) -> tương thích PC, Mobile. Toàn bộ nội dung dùng Tiếng Việt.
+- **Server:** Node.js + Express  -> Signaling Server, Static file server
 - **WebRTC:** Native API (không dùng PeerJS, simple-peer)
 - **STUN:** Google STUN servers (miễn phí)
 
@@ -22,7 +22,7 @@
        ▼                                            ▼
 ┌──────────────────────────────────────────────────────────┐
 │                 SIGNALING SERVER                         │
-│                 (Node.js + Socket.io)                    │
+│                 (Node.js )                    │
 │  - Quản lý rooms/peers                                   │
 │  - Relay SDP Offer/Answer                                │
 │  - Relay ICE Candidates                                  │
