@@ -111,6 +111,7 @@ npm run start
 - Kiểm tra file size (> 100MB có thể chậm)
 - Browser có thể crash với file quá lớn
 - Thử file nhỏ hơn để test
+- Debug thông qua: chrome://webrtc-internals/
 
 ## References
 
