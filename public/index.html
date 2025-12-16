@@ -70,8 +70,8 @@
     <!-- Header -->
     <header class="border-b border-gray-200 backdrop-blur-xl bg-white/80 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
+        <div class="flex items-center justify-between flex-col sm:flex-row gap-4">
+          <div class="flex items-center gap-3 pb-2 sm:pb-0">
             <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-rose-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
@@ -85,9 +85,9 @@
           
           <!-- Your ID Badge -->
           <div id="my-id-badge" class="hidden">
-            <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex items-center flex-row gap-3">
               <!-- Device Badge -->
-              <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
+              <div class="flex items-center hidden gap-2 px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
                 <span id="my-device-icon" class="text-base">💻</span>
                 <span id="my-device" class="text-sm text-gray-600">...</span>
               </div>
@@ -101,7 +101,7 @@
               </div>
               
               <!-- ID Badge -->
-              <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm">
+              <div class="flex hidden items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm">
                 <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span class="text-sm text-gray-600">Mã:</span>
                 <span id="my-peer-id" class="font-mono font-bold text-primary-600 tracking-wider">---</span>
@@ -123,7 +123,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3">
         <div class="flex items-center justify-center gap-4">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-rose-500 flex items-center justify-center text-white font-bold text-sm">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br border border-gray-200  flex items-center justify-center text-white font-bold text-sm">
               <span id="user-avatar-text">?</span>
             </div>
             <div class="flex items-center gap-2">
