@@ -225,7 +225,7 @@ function broadcastPeerList() {
   io.emit("peer-list", peerList);
 }
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3005;
 server.listen(PORT, () => {
   console.log(
     `║   Server đang chạy tại: http://localhost:${PORT}             ║`
